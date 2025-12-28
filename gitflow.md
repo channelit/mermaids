@@ -183,3 +183,23 @@ gitGraph
    - Roll back to `1.0.1` by deploying tag `1.0.1` from `release/1`.
 
 > Even with long-lived release branches, tagging each release/patch is critical for repeatable, deterministic rollbacks.
+
+### Environment handling (important for IaC)
+
+Avoid putting **environment** differences in branches. Use environment-specific configuration files such as:
+
+- `environments/dev/values.yaml`
+- `environments/stage/values.yaml`
+- `environments/prod/values.yaml`
+
+Alternatively, use **Helmfile** or **Kustomize overlays** per environment. This prevents “prod branch vs dev branch” drift.
+
+---
+
+### CI/CD guardrails to add (high value for Helm repos)
+
+- `helm lint`
+- `helm template` + Kubernetes schema validation
+- **Policy as code**: OPA/Conftest (e.g., prevent `latest` tag, require resource limits, restrict privileged containers)
+- Diff preview on PR (Argo CD diff / Flux diff / `helm diff`)
+- Require approvals for changes under `environments/prod/*`
