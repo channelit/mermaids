@@ -133,54 +133,54 @@ gitGraph
   merge "release/2" tag:"Back-merge 2.0.1 -> develop"
 ```
 
-#### Branch roles
-- **`main`**: Always production-ready. Protected. Updated only via PR.
-- **`develop`**: Long-lived integration branch. Contains changes not yet in production.
-- **`release/1`, `release/2`, ...**: Long-lived release lines. Used for rollback and for patching a specific release line over time.
-- **`feature/*`**: Short-lived branches created from `develop` for individual changes (charts, values, policies, etc.).
+## IaC Git process (Helm/Kubernetes) with long-lived release branches
+
+### Branch roles
+- **`main`**: Always production-ready; protected; updated only via PR.
+- **`develop`**: Long-lived integration branch; contains changes not yet in production.
+- **`release/1`, `release/2`, ...**: Long-lived release lines; used to preserve historical release states and apply patches to a specific line.
+- **`feature/*`**: Short-lived branches for individual changes; branched from `develop`.
 
 ---
 
-### Step-by-step process
+### Process steps
 
-### 1) Establish the first production release on `main`
-1. Commit the initial baseline to `main`.
-2. Cut the first production release on `main`.
-3. Tag the production commit (example: `1.0.0`).
+1. **Create the initial production baseline**
+   - Commit the initial IaC/Helm baseline to `main`.
+   - Tag the first production release on `main` (e.g., `1.0.0`).
 
-#### 2) Create long-lived branches
-4. Create **`develop`** from `main` for ongoing integration work.
-5. Create **`release/1`** from `main` at the `1.0.0` point. This becomes the long-lived branch for the **1.x** release line.
+2. **Create long-lived integration and release branches**
+   - Create `develop` from `main` for ongoing work.
+   - Create `release/1` from `main` at the `1.0.0` point to represent the long-lived **1.x** release line.
 
-#### 3) Patch an older release line (example: `release/1`)
-6. Apply patch changes directly on `release/1` (via PR).
-7. Tag the patched state (example: `1.0.1`).
-8. Backport the patch into `develop` by merging `release/1` → `develop` (via PR), so future releases do not lose the fix.
+3. **Implement features (day-to-day change flow)**
+   - Create `feature/<name>` from `develop`.
+   - Make changes (Helm charts, values, policies, pipelines).
+   - Open a PR and merge `feature/<name>` → `develop` after review and checks.
 
-#### 4) Build features from `develop`
-9. Create `feature/alpha` from `develop`, implement changes, then PR merge back into `develop`.
-10. Create `feature/beta` from `develop`, implement changes, then PR merge back into `develop`.
+4. **Cut a new release line when ready**
+   - Create `release/2` from `develop` when preparing the next major/minor release.
+   - Perform only release-hardening changes on `release/2` (stabilization/RC fixes).
+   - Tag the release on `release/2` (e.g., `2.0.0`).
 
-#### 5) Cut a new long-lived release line (example: `release/2`)
-11. When ready to prepare the next major/minor release, create **`release/2`** from `develop`.
-12. Do stabilization/RC-only changes on `release/2`.
-13. Tag the release on `release/2` (example: `2.0.0`).
+5. **Promote a release to production**
+   - Open a PR and merge `release/2` → `main`.
+   - `main` now reflects the production state for that release (e.g., `2.0.0`).
 
-#### 6) Promote the release line to production
-14. PR merge `release/2` → `main`. `main` now reflects the production state for `2.0.0`.
+6. **Patch an existing release line (hotfix/patches)**
+   - Apply patch changes on the relevant long-lived branch (e.g., `release/2` for a `2.x` patch, or `release/1` for a `1.x` patch).
+   - Tag the patched state (e.g., `2.0.1`).
 
-#### 7) Patch the current production release line (example: `release/2`)
-15. Apply patch changes on `release/2` (via PR).
-16. Tag the patched state (example: `2.0.1`).
-17. PR merge `release/2` → `main` to promote the patch to production.
-18. Merge `release/2` → `develop` to keep `develop` aligned with what shipped.
+7. **Promote patch to production**
+   - Open a PR and merge the patched release branch → `main` (e.g., `release/2` → `main`).
+   - `main` is now production-ready at the patched version (e.g., `2.0.1`).
 
----
+8. **Keep `develop` aligned with what shipped**
+   - Merge the relevant release branch back into `develop` (e.g., `release/2` → `develop`) so future releases include the patch.
 
-### Rollback approach (using long-lived release branches)
-- To roll back production from `main`, redeploy using the **tag** on the appropriate long-lived release branch:
-   - Roll back to `2.0.0` by deploying tag `2.0.0` from `release/2`.
-   - Roll back to `1.0.1` by deploying tag `1.0.1` from `release/1`.
+9. **Rollback using long-lived release branches**
+   - Roll back by deploying the previously tagged state from the relevant release line:
+      - Example: roll back to `2.0.0` by deploying tag `2.0.
 
 > Even with long-lived release branches, tagging each release/patch is critical for repeatable, deterministic rollbacks.
 
